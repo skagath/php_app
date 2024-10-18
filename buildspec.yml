@@ -1,14 +1,8 @@
-
 version: 0.2
 phases:
   install:
-    runtime-versions:
-      php: 7.4  # Adjust this version to your needs (7.4, 8.0, etc.)
     commands:
-      - curl -sS https://getcomposer.org/installer | php
-  build:
-    commands:
-      - php composer.phar install
+      - composer install  # Use pre-installed composer
 artifacts:
   files:
     - '**/*'
