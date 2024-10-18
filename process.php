@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 $servername = "database-1.c9mci02ckobw.us-east-1.rds.amazonaws.com";
 $username = "admin";
 $password = "admin123";
-$dbname = "database-1";
+$dbname = "database1";
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
