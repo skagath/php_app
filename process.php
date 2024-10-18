@@ -2,10 +2,10 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-$servername = "mydb.c9mci02ckobw.us-east-1.rds.amazonaws.com";
+$servername = "database-1.c9mci02ckobw.us-east-1.rds.amazonaws.com";
 $username = "admin";
-$password = "12345678";
-$dbname = "mydb";
+$password = "admin123";
+$dbname = "database-1";
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
