@@ -6,7 +6,7 @@
     <title>Simpl PHP Form</title>
 </head>
 <body>
-    <h2>Enter Your Details</h2>
+    <h2>Enter Your Details...</h2>
     <form action="process.php" method="post">
         <label for="name">Name:</label><br>
         <input type="text" id="name" name="name" required><br><br>
