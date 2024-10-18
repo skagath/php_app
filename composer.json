@@ -1,0 +1,10 @@
+{
+    "name": "yourname/yourproject",
+    "description": "A simple PHP project",
+    "require": {
+        "php": "^7.4",
+        "ext-pdo": "*",      // If using PDO for database access
+        "ext-mysqli": "*"    // If using MySQLi for MySQL access
+    }
+}
+
