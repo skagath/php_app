@@ -9,6 +9,7 @@ pipeline {
         ENVIRONMENT_NAME = 'Myphp-app-env' // Your Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
         BRANCH_NAME = 'main' // Branch to deploy from, e.g., 'main' or 'master'
+        VERSION_LABEL = 'latest' // You can replace this with your specific version label if required
     }
 
     stages {
@@ -22,14 +23,14 @@ pipeline {
         stage('Deploy to Elastic Beanstalk') {
             steps {
                 script {
-                    // Deploy the application to the environment
-                    sh '''
+                    // Deploy the application to the environment with a specific version label
+                    sh """
                     aws elasticbeanstalk update-environment \
                         --application-name ${APPLICATION_NAME} \
                         --environment-name ${ENVIRONMENT_NAME} \
-                        --version-${BUILD_NUMBER} \
+                        --version-label ${VERSION_LABEL} \
                         --region ${AWS_REGION}
-                    '''
+                    """
                 }
             }
         }
