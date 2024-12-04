@@ -16,23 +16,32 @@ pipeline {
             steps {
                 // Checkout code from GitHub repository
                 git branch: "${BRANCH_NAME}", url: "${GITHUB_REPO}"
+
+                // Verify the commit hash for debugging purposes
+                sh "git log -n 1 --oneline"
             }
         }
 
-        stage('Get Latest Version Label') {
+        stage('Create New Version') {
             steps {
                 script {
-                    // Fetch the latest application version label from Elastic Beanstalk
-                    def versionLabel = sh(script: """
-                        aws elasticbeanstalk describe-application-versions \
-                            --application-name ${APPLICATION_NAME} \
-                            --query "ApplicationVersions[0].VersionLabel" \
-                            --region ${AWS_REGION} \
-                            --output text
-                    """, returnStdout: true).trim()
+                    // Create a unique version label for every deployment
+                    def versionLabel = "v${BUILD_NUMBER}"
 
-                    // Output the version label for debugging
-                    echo "Latest Version Label: ${versionLabel}"
+                    // Zip the application code and upload it to S3
+                    sh """
+                    zip -r app-${versionLabel}.zip .
+                    aws s3 cp app-${versionLabel}.zip s3://your-s3-bucket/app-${versionLabel}.zip
+                    """
+
+                    // Create a new application version
+                    sh """
+                    aws elasticbeanstalk create-application-version \
+                        --application-name ${APPLICATION_NAME} \
+                        --version-label ${versionLabel} \
+                        --source-bundle S3Bucket="your-s3-bucket",S3Key="app-${versionLabel}.zip" \
+                        --region ${AWS_REGION}
+                    """
 
                     // Set the version label to be used in the next stage
                     env.VERSION_LABEL = versionLabel
@@ -43,7 +52,7 @@ pipeline {
         stage('Deploy to Elastic Beanstalk') {
             steps {
                 script {
-                    // Deploy the application to the environment using the dynamic version label
+                    // Deploy the new application version to Elastic Beanstalk
                     sh """
                     aws elasticbeanstalk update-environment \
                         --application-name ${APPLICATION_NAME} \
