@@ -1,5 +1,3 @@
-
-
 pipeline {
     agent any
 
@@ -9,7 +7,7 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // Set AWS Secret Access Key from Jenkins Credentials Store
         APPLICATION_NAME = 'myphp-app' // Your Elastic Beanstalk Application Name
         ENVIRONMENT_NAME = 'Myphp-app-env' // Your Elastic Beanstalk Environment Name
-        GITHUB_REPO = 'https://github.com/skagath/php_app.git/' // Replace with your GitHub repository URL
+        GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
         BRANCH_NAME = 'main' // Branch to deploy from, e.g., 'main' or 'master'
     }
 
@@ -21,13 +19,11 @@ pipeline {
             }
         }
 
-
-}
-
         stage('Deploy to Elastic Beanstalk') {
             steps {
                 script {
-                    # Deploy the application to the environment
+                    // Deploy the application to the environment
+                    sh '''
                     aws elasticbeanstalk update-environment \
                         --application-name ${APPLICATION_NAME} \
                         --environment-name ${ENVIRONMENT_NAME} \
