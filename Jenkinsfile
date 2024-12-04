@@ -27,7 +27,7 @@ pipeline {
                     aws elasticbeanstalk update-environment \
                         --application-name ${APPLICATION_NAME} \
                         --environment-name ${ENVIRONMENT_NAME} \
-                        --version-label ${BUILD_NUMBER} \
+                        --version-${BUILD_NUMBER} \
                         --region ${AWS_REGION}
                     '''
                 }
