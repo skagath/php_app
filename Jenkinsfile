@@ -9,7 +9,7 @@ pipeline {
         ENVIRONMENT_NAME = 'Myphp-app-env' // Your Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
         BRANCH_NAME = 'main' // Branch to deploy from, e.g., 'main' or 'master'
-        S3_BUCKET = 'your-s3-bucket' // Your S3 bucket where the application versions will be uploaded
+        
     }
 
     stages {
@@ -29,15 +29,7 @@ pipeline {
                     // Generate a version label based on the Jenkins build number (or timestamp)
                     def versionLabel = "v${BUILD_NUMBER}"
 
-                    // Create a new application version in Elastic Beanstalk directly from the GitHub repository
-                    sh """
-                    aws elasticbeanstalk create-application-version \
-                        --application-name ${APPLICATION_NAME} \
-                        --version-label ${versionLabel} \
-                        --region ${AWS_REGION}
-                    """
 
-                    // Set the version label to be used in the next stage
                     env.VERSION_LABEL = versionLabel
                 }
             }
