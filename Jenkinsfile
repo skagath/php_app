@@ -23,17 +23,6 @@ pipeline {
             }
         }
 
-        stage('Create New Version') {
-            steps {
-                script {
-                    // Generate a version label based on the Jenkins build number (or timestamp)
-                    def versionLabel = "v${BUILD_NUMBER}"
-
-
-                    env.VERSION_LABEL = versionLabel
-                }
-            }
-        }
 
         stage('Deploy to Elastic Beanstalk') {
             steps {
@@ -43,7 +32,6 @@ pipeline {
                     aws elasticbeanstalk update-environment \
                         --application-name ${APPLICATION_NAME} \
                         --environment-name ${ENVIRONMENT_NAME} \
-                        --version-label ${env.VERSION_LABEL} \
                         --region ${AWS_REGION}
                     """
                 }
