@@ -9,6 +9,8 @@ pipeline {
         ENVIRONMENT_NAME = 'Myphp-app-env' // Your Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
         BRANCH_NAME = 'main' // Branch to deploy from, e.g., 'main' or 'master'
+        S3_BUCKET = 'php-elastic-beanstalk-app'
+        
     }
 
     stages {
