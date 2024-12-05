@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1' // Change to your AWS region
-        AWS_ACCESS_KEY_ID = credentials('AWS-ACCESS-KEY-ID') // AWS Access Key ID from Jenkins Credentials
-        AWS_SECRET_ACCESS_KEY = credentials('AWS-SECRET-ACCESS-KEY') // AWS Secret Access Key from Jenkins Credentials
+        AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // AWS Access Key ID from Jenkins Credentials
+        AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // AWS Secret Access Key from Jenkins Credentials
         APPLICATION_NAME = 'myphp-app' // Your Elastic Beanstalk Application Name
         ENVIRONMENT_NAME = 'Myphp-app-env' // Your Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
