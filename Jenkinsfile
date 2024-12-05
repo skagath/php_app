@@ -3,75 +3,78 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1' // Change to your AWS region
-        AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // Set AWS Access Key from Jenkins Credentials Store
-        AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // Set AWS Secret Access Key from Jenkins Credentials Store
+        AWS_ACCESS_KEY_ID = credentials('AWS-ACCESS-KEY-ID') // AWS Access Key ID from Jenkins Credentials
+        AWS_SECRET_ACCESS_KEY = credentials('AWS-SECRET-ACCESS-KEY') // AWS Secret Access Key from Jenkins Credentials
         APPLICATION_NAME = 'myphp-app' // Your Elastic Beanstalk Application Name
         ENVIRONMENT_NAME = 'Myphp-app-env' // Your Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
-        BRANCH_NAME = 'main' // Branch to deploy from, e.g., 'main' or 'master'
-        S3_BUCKET = 'php-elastic-beanstalk-app'
-        
+        BRANCH_NAME = 'main' // Branch to deploy from
+        S3_BUCKET = 'php-elastic-beanstalk-app' // Your S3 bucket for deployment artifacts
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                // Checkout code from GitHub repository
+                echo "Cloning repository ${GITHUB_REPO} (branch: ${BRANCH_NAME})"
                 git branch: "${BRANCH_NAME}", url: "${GITHUB_REPO}"
             }
         }
 
-        stage('Get Latest Version Label') {
+        stage('Package Application') {
             steps {
-                script {
-                    // Fetch the latest application version label from Elastic Beanstalk
-                    def versionLabel = sh(script: """
-                        aws elasticbeanstalk describe-application-versions \
-                            --application-name ${APPLICATION_NAME} \
-                            --query "ApplicationVersions[0].VersionLabel" \
-                            --region ${AWS_REGION} \
-                            --output text
-                    """, returnStdout: true).trim()
+                echo "Packaging application into a ZIP file..."
+                sh '''
+                zip -r application.zip * .[^.]* -x Jenkinsfile
+                '''
+            }
+        }
 
-                    // Output the version label for debugging
-                    echo "Latest Version Label: ${versionLabel}"
+        stage('Upload to S3') {
+            steps {
+                echo "Uploading application.zip to S3 bucket ${S3_BUCKET}..."
+                sh '''
+                aws s3 cp application.zip s3://$S3_BUCKET/application-${BUILD_NUMBER}.zip --region $AWS_REGION
+                '''
+            }
+        }
 
-                    // Set the version label to be used in the next stage
-                    env.VERSION_LABEL = versionLabel
-                }
+        stage('Create New Application Version') {
+            steps {
+                echo "Creating a new application version in Elastic Beanstalk..."
+                sh '''
+                aws elasticbeanstalk create-application-version \
+                    --application-name $APPLICATION_NAME \
+                    --version-label build-${BUILD_NUMBER} \
+                    --source-bundle S3Bucket=$S3_BUCKET,S3Key=application-${BUILD_NUMBER}.zip \
+                    --region $AWS_REGION
+                '''
             }
         }
 
         stage('Deploy to Elastic Beanstalk') {
             steps {
-                script {
-                    // Deploy the application to the environment using the dynamic version label
-                    sh """
-                    aws elasticbeanstalk update-environment \
-                        --application-name ${APPLICATION_NAME} \
-                        --environment-name ${ENVIRONMENT_NAME} \
-                        --version-label ${env.VERSION_LABEL} \
-                        --region ${AWS_REGION}
-                    """
-                }
+                echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version..."
+                sh '''
+                aws elasticbeanstalk update-environment \
+                    --environment-name $ENVIRONMENT_NAME \
+                    --version-label build-${BUILD_NUMBER} \
+                    --region $AWS_REGION
+                '''
             }
         }
     }
 
     post {
         always {
-            // Clean up or notify upon completion
-            echo "Pipeline completed"
+            echo "Pipeline execution completed."
         }
 
         success {
-            // Actions to take if deployment is successful
-            echo "Deployment to Elastic Beanstalk successful!"
+            echo "Deployment to Elastic Beanstalk was successful!"
         }
 
         failure {
-            // Actions to take if deployment fails
-            echo "Deployment failed!"
+            echo "Deployment failed. Please check the logs for more details."
         }
     }
 }
