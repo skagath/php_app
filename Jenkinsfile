@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1' // Change to your AWS region
+        AWS_REGION = 'us-east-1'                       // Change to your AWS region
         AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // AWS Access Key ID from Jenkins Credentials
         AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // AWS Secret Access Key from Jenkins Credentials
-        APPLICATION_NAME = 'myphp-app' // Your Elastic Beanstalk Application Name
-        ENVIRONMENT_NAME = 'Myphp-app-env' // Your Elastic Beanstalk Environment Name
+        APPLICATION_NAME = 'myphp-app'                // Your Elastic Beanstalk Application Name
+        ENVIRONMENT_NAME = 'Myphp-app-env'            // Your Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
-        BRANCH_NAME = 'main' // Branch to deploy from
-        S3_BUCKET = 'php-elastic-beanstalk-app' // Your S3 bucket for deployment artifacts
+        BRANCH_NAME = 'main'                          // Branch to deploy from
+        S3_BUCKET = 'php-elastic-beanstalk-app'       // Your S3 bucket for deployment artifacts
     }
 
     stages {
@@ -17,6 +17,17 @@ pipeline {
             steps {
                 echo "Cloning repository ${GITHUB_REPO} (branch: ${BRANCH_NAME})"
                 git branch: "${BRANCH_NAME}", url: "${GITHUB_REPO}"
+            }
+        }
+
+        stage('Install zip (if required)') {
+            steps {
+                echo 'Installing zip...'
+                sh '''
+                if ! command -v zip > /dev/null; then
+                    sudo apt-get update && sudo apt-get install -y zip
+                fi
+                '''
             }
         }
 
