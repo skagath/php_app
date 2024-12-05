@@ -20,16 +20,6 @@ pipeline {
             }
         }
 
-        stage('Install zip (if required)') {
-            steps {
-                echo 'Installing zip...'
-                sh '''
-                if ! command -v zip > /dev/null; then
-                    sudo apt-get update && sudo apt-get install -y zip
-                fi
-                '''
-            }
-        }
 
         stage('Package Application') {
             steps {
