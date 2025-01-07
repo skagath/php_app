@@ -53,13 +53,13 @@ pipeline {
 
         stage('Deploy to Elastic Beanstalk') {
             steps {
-                echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version (Immutable Deployment)..."
+                echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version (Rolling Update)..."
                 sh '''
                 aws elasticbeanstalk update-environment \
                     --environment-name $ENVIRONMENT_NAME \
                     --version-label build-${BUILD_NUMBER} \
                     --region $AWS_REGION \
-                    --option-settings "Namespace=aws:elasticbeanstalk:command,OptionName=DeploymentPolicy,Value=Immutable"
+                    --option-settings "Namespace=aws:elasticbeanstalk:command,OptionName=DeploymentPolicy,Value=Rolling"
                 '''
             }
         }
