@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-west-2'                       // Change to your AWS region
+        AWS_REGION = 'us-west-2'                        // AWS region
         AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // AWS Access Key ID from Jenkins Credentials
         AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // AWS Secret Access Key from Jenkins Credentials
-        APPLICATION_NAME = 'myphp-app'                // Your Elastic Beanstalk Application Name
-        ENVIRONMENT_NAME = 'Myphp-app-env'            // Your Elastic Beanstalk Environment Name
-        GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
-        BRANCH_NAME = 'main'                          // Branch to deploy from
-        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350' // Your S3 bucket for deployment artifacts
+        APPLICATION_NAME = 'myphp-app'                  // Elastic Beanstalk Application Name
+        ENVIRONMENT_NAME = 'Myphp-app-env'              // Elastic Beanstalk Environment Name
+        GITHUB_REPO = 'https://github.com/skagath/php_app.git' // GitHub repository URL
+        BRANCH_NAME = 'main'                            // Branch to deploy from
+        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350' // S3 bucket for deployment artifacts
     }
 
     stages {
@@ -66,27 +66,15 @@ pipeline {
 
         stage('Wait for Deployment Completion') {
             steps {
-                echo "Waiting for deployment to complete using event and health validation..."
+                echo "Waiting for the event: 'Environment update completed successfully.'"
                 script {
                     def retries = 0
-                    def maxRetries = 60 // Wait up to 30 minutes (60 retries, 30s each)
-                    def deploymentSuccess = false
+                    def maxRetries = 60  // Maximum retries (e.g., wait for 30 minutes with 30s intervals)
+                    def eventFound = false
 
                     while (retries < maxRetries) {
-                        // Check Elastic Beanstalk environment health
-                        def healthStatus = sh(script: """
-                            aws elasticbeanstalk describe-environments \
-                                --application-name $APPLICATION_NAME \
-                                --environment-name $ENVIRONMENT_NAME \
-                                --region $AWS_REGION \
-                                --query "Environments[0].Health" \
-                                --output text
-                        """, returnStdout: true).trim()
-
-                        echo "Current Environment Health Status: $healthStatus"
-
-                        // Check Elastic Beanstalk events for successful deployment message
-                        def deploymentEvent = sh(script: """
+                        // Fetch the latest Elastic Beanstalk events
+                        def event = sh(script: """
                             aws elasticbeanstalk describe-events \
                                 --application-name $APPLICATION_NAME \
                                 --environment-name $ENVIRONMENT_NAME \
@@ -96,24 +84,25 @@ pipeline {
                                 --output text
                         """, returnStdout: true).trim()
 
-                        echo "Checking for 'Environment update completed successfully' event..."
+                        echo "Checking for deployment completion event..."
 
-                        if (healthStatus == 'Green' && deploymentEvent.contains('Environment update completed successfully')) {
-                            echo "Deployment completed successfully, environment is healthy."
-                            deploymentSuccess = true
+                        if (event.contains('Environment update completed successfully')) {
+                            echo "Deployment completed successfully!"
+                            eventFound = true
                             break
                         }
 
                         retries++
                         if (retries >= maxRetries) {
-                            error "Deployment did not complete successfully after maximum retries."
+                            error "Deployment event not found after maximum retries."
                         }
 
+                        // Wait for 30 seconds before checking again
                         sleep(time: 30, unit: 'SECONDS')
                     }
 
-                    if (!deploymentSuccess) {
-                        error "Failed to detect successful deployment or environment health after maximum retries."
+                    if (!eventFound) {
+                        error "Failed to detect 'Environment update completed successfully.' event."
                     }
                 }
             }
