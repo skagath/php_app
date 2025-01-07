@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-west-2'                       // Change to your AWS region
-        AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // AWS Access Key ID from Jenkins Credentials
-        AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // AWS Secret Access Key from Jenkins Credentials
-        APPLICATION_NAME = 'myphp-app'                // Your Elastic Beanstalk Application Name
-        ENVIRONMENT_NAME = 'Myphp-app-env'            // Your Elastic Beanstalk Environment Name
-        GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
-        BRANCH_NAME = 'main'                          // Branch to deploy from
-        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350'       // Your S3 bucket for deployment artifacts
+        AWS_REGION = 'us-west-2'
+        AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS')
+        APPLICATION_NAME = 'myphp-app'
+        ENVIRONMENT_NAME = 'Myphp-app-env'
+        GITHUB_REPO = 'https://github.com/skagath/php_app.git'
+        BRANCH_NAME = 'main'
+        S3_BUCKET = 'php-elastic-beanstalk-app'
     }
 
     stages {
@@ -19,7 +19,6 @@ pipeline {
                 git branch: "${BRANCH_NAME}", url: "${GITHUB_REPO}"
             }
         }
-
 
         stage('Package Application') {
             steps {
@@ -48,6 +47,15 @@ pipeline {
                     --version-label build-${BUILD_NUMBER} \
                     --source-bundle S3Bucket=$S3_BUCKET,S3Key=application-${BUILD_NUMBER}.zip \
                     --region $AWS_REGION
+                '''
+            }
+        }
+
+        stage('Rebuild Environment') {
+            steps {
+                echo "Rebuilding environment to include all updates (scaling groups, load balancers, etc.)..."
+                sh '''
+                aws elasticbeanstalk rebuild-environment --environment-name $ENVIRONMENT_NAME --region $AWS_REGION
                 '''
             }
         }
