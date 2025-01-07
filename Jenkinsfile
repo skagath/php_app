@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -67,13 +66,15 @@ pipeline {
 
         stage('Wait for Deployment Completion') {
             steps {
-                echo "Waiting for environment to update and deployment to complete..."
+                echo "Waiting for deployment to complete using event and health validation..."
                 script {
-                    def status = ""
                     def retries = 0
-                    def maxRetries = 60  // Maximum retries (e.g., wait for 60 minutes)
+                    def maxRetries = 60 // Wait up to 30 minutes (60 retries, 30s each)
+                    def deploymentSuccess = false
+
                     while (retries < maxRetries) {
-                        status = sh(script: """
+                        // Check Elastic Beanstalk environment health
+                        def healthStatus = sh(script: """
                             aws elasticbeanstalk describe-environments \
                                 --application-name $APPLICATION_NAME \
                                 --environment-name $ENVIRONMENT_NAME \
@@ -82,11 +83,24 @@ pipeline {
                                 --output text
                         """, returnStdout: true).trim()
 
-                        echo "Current Environment Health Status: $status"
+                        echo "Current Environment Health Status: $healthStatus"
 
-                        // If the status is 'Green' (healthy) and the application is deployed successfully
-                        if (status == 'Green') {
-                            echo "Deployment completed successfully and environment is healthy."
+                        // Check Elastic Beanstalk events for successful deployment message
+                        def deploymentEvent = sh(script: """
+                            aws elasticbeanstalk describe-events \
+                                --application-name $APPLICATION_NAME \
+                                --environment-name $ENVIRONMENT_NAME \
+                                --region $AWS_REGION \
+                                --max-items 5 \
+                                --query "Events[?contains(Message, 'Environment update completed successfully.')].Message" \
+                                --output text
+                        """, returnStdout: true).trim()
+
+                        echo "Checking for 'Environment update completed successfully' event..."
+
+                        if (healthStatus == 'Green' && deploymentEvent.contains('Environment update completed successfully')) {
+                            echo "Deployment completed successfully, environment is healthy."
+                            deploymentSuccess = true
                             break
                         }
 
@@ -95,8 +109,11 @@ pipeline {
                             error "Deployment did not complete successfully after maximum retries."
                         }
 
-                        // Wait for 30 seconds before checking again
                         sleep(time: 30, unit: 'SECONDS')
+                    }
+
+                    if (!deploymentSuccess) {
+                        error "Failed to detect successful deployment or environment health after maximum retries."
                     }
                 }
             }
@@ -109,11 +126,11 @@ pipeline {
         }
 
         success {
-            echo "Deployment to Elastic Beanstalk was successful!"
+            echo "✅ Deployment to Elastic Beanstalk was successful!"
         }
 
         failure {
-            echo "Deployment failed. Please check the logs for more details."
+            echo "❌ Deployment failed. Please check the logs for more details."
         }
     }
 }
