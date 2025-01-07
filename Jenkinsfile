@@ -63,6 +63,43 @@ pipeline {
                 '''
             }
         }
+
+        stage('Wait for Deployment Completion') {
+            steps {
+                echo "Waiting for environment to update and deployment to complete..."
+                script {
+                    def status = ""
+                    def retries = 0
+                    def maxRetries = 60  // Maximum retries (e.g., wait for 60 minutes)
+                    while (retries < maxRetries) {
+                        status = sh(script: """
+                            aws elasticbeanstalk describe-environments \
+                                --application-name $APPLICATION_NAME \
+                                --environment-name $ENVIRONMENT_NAME \
+                                --region $AWS_REGION \
+                                --query "Environments[0].Health" \
+                                --output text
+                        """, returnStdout: true).trim()
+
+                        echo "Current Environment Health Status: $status"
+
+                        // If the status is 'Green' (healthy) and the application is deployed successfully
+                        if (status == 'Green') {
+                            echo "Deployment completed successfully and environment is healthy."
+                            break
+                        }
+
+                        retries++
+                        if (retries >= maxRetries) {
+                            error "Deployment did not complete successfully after maximum retries."
+                        }
+
+                        // Wait for 30 seconds before checking again
+                        sleep(time: 30, unit: 'SECONDS')
+                    }
+                }
+            }
+        }
     }
 
     post {
