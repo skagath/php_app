@@ -9,7 +9,7 @@ pipeline {
         ENVIRONMENT_NAME = 'Myphp-app-env'
         GITHUB_REPO = 'https://github.com/skagath/php_app.git'
         BRANCH_NAME = 'main'
-        S3_BUCKET = 'php-elastic-beanstalk-app'
+        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350'
     }
 
     stages {
