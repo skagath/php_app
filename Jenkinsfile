@@ -51,6 +51,37 @@ pipeline {
             }
         }
 
+        stage('Check Elastic Beanstalk Environment Health') {
+            steps {
+                script {
+                    // Poll the Elastic Beanstalk environment health
+                    def healthStatus = ''
+                    def retries = 0
+                    def maxRetries = 10
+                    def success = false
+                    
+                    // Retry logic
+                    while (retries < maxRetries && !success) {
+                        healthStatus = sh(script: "aws elasticbeanstalk describe-environments --environment-names ${ENVIRONMENT_NAME} --region ${AWS_REGION} --query 'Environments[0].Health' --output text", returnStdout: true).trim()
+                        echo "Current Health Status: ${healthStatus}"
+
+                        if (healthStatus == 'Green') {
+                            echo "Environment health is OK. Proceeding with rebuild."
+                            success = true
+                        } else {
+                            echo "Environment health is not OK. Retrying in 30 seconds..."
+                            retries++
+                            sleep(30)
+                        }
+                    }
+
+                    if (!success) {
+                        error "Environment health is not OK after ${maxRetries} retries. Aborting rebuild."
+                    }
+                }
+            }
+        }
+
         stage('Rebuild Environment') {
             steps {
                 echo "Rebuilding environment to include all updates (scaling groups, load balancers, etc.)..."
