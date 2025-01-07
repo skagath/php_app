@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-west-2'
-        AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS')
-        APPLICATION_NAME = 'myphp-app'
-        ENVIRONMENT_NAME = 'Myphp-app-env'
-        GITHUB_REPO = 'https://github.com/skagath/php_app.git'
-        BRANCH_NAME = 'main'
-        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350'
+        AWS_REGION = 'us-west-2'                       // Change to your AWS region
+        AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // AWS Access Key ID from Jenkins Credentials
+        AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // AWS Secret Access Key from Jenkins Credentials
+        APPLICATION_NAME = 'myphp-app'                // Your Elastic Beanstalk Application Name
+        ENVIRONMENT_NAME = 'Myphp-app-env'            // Your Elastic Beanstalk Environment Name
+        GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
+        BRANCH_NAME = 'main'                          // Branch to deploy from
+        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350' // Your S3 bucket for deployment artifacts
     }
 
     stages {
@@ -51,54 +51,15 @@ pipeline {
             }
         }
 
-        stage('Check Elastic Beanstalk Environment Health') {
-            steps {
-                script {
-                    // Poll the Elastic Beanstalk environment health
-                    def healthStatus = ''
-                    def retries = 0
-                    def maxRetries = 10
-                    def success = false
-                    
-                    // Retry logic
-                    while (retries < maxRetries && !success) {
-                        healthStatus = sh(script: "aws elasticbeanstalk describe-environments --environment-names ${ENVIRONMENT_NAME} --region ${AWS_REGION} --query 'Environments[0].Health' --output text", returnStdout: true).trim()
-                        echo "Current Health Status: ${healthStatus}"
-
-                        if (healthStatus == 'Green') {
-                            echo "Environment health is OK. Proceeding with rebuild."
-                            success = true
-                        } else {
-                            echo "Environment health is not OK. Retrying in 30 seconds..."
-                            retries++
-                            sleep(30)
-                        }
-                    }
-
-                    if (!success) {
-                        error "Environment health is not OK after ${maxRetries} retries. Aborting rebuild."
-                    }
-                }
-            }
-        }
-
-        stage('Rebuild Environment') {
-            steps {
-                echo "Rebuilding environment to include all updates (scaling groups, load balancers, etc.)..."
-                sh '''
-                aws elasticbeanstalk rebuild-environment --environment-name $ENVIRONMENT_NAME --region $AWS_REGION
-                '''
-            }
-        }
-
         stage('Deploy to Elastic Beanstalk') {
             steps {
-                echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version..."
+                echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version (Immutable Deployment)..."
                 sh '''
                 aws elasticbeanstalk update-environment \
                     --environment-name $ENVIRONMENT_NAME \
                     --version-label build-${BUILD_NUMBER} \
-                    --region $AWS_REGION
+                    --region $AWS_REGION \
+                    --option-settings "Namespace=aws:elasticbeanstalk:environment,OptionName=DeploymentPolicy,Value=Immutable"
                 '''
             }
         }
