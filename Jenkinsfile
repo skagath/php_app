@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1'                       // Change to your AWS region
+        AWS_REGION = 'us-west-2'                       // Change to your AWS region
         AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // AWS Access Key ID from Jenkins Credentials
         AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // AWS Secret Access Key from Jenkins Credentials
         APPLICATION_NAME = 'myphp-app'                // Your Elastic Beanstalk Application Name
