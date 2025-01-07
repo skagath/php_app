@@ -1,14 +1,15 @@
+
 pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-west-2'                        // Change to your AWS region
+        AWS_REGION = 'us-west-2'                       // Change to your AWS region
         AWS_ACCESS_KEY_ID = credentials('AWS-CREDENDS') // AWS Access Key ID from Jenkins Credentials
         AWS_SECRET_ACCESS_KEY = credentials('AWS-CREDENDS') // AWS Secret Access Key from Jenkins Credentials
-        APPLICATION_NAME = 'myphp-app'                  // Your Elastic Beanstalk Application Name
-        ENVIRONMENT_NAME = 'Myphp-app-env'              // Your Elastic Beanstalk Environment Name
+        APPLICATION_NAME = 'myphp-app'                // Your Elastic Beanstalk Application Name
+        ENVIRONMENT_NAME = 'Myphp-app-env'            // Your Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // Replace with your GitHub repository URL
-        BRANCH_NAME = 'main'                            // Branch to deploy from
+        BRANCH_NAME = 'main'                          // Branch to deploy from
         S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350' // Your S3 bucket for deployment artifacts
     }
 
@@ -53,7 +54,7 @@ pipeline {
 
         stage('Deploy to Elastic Beanstalk') {
             steps {
-                echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version (Immutable Deployment)..."
+                echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version (Rolling Update)..."
                 sh '''
                 aws elasticbeanstalk update-environment \
                     --environment-name $ENVIRONMENT_NAME \
@@ -66,13 +67,12 @@ pipeline {
 
         stage('Wait for Deployment Completion') {
             steps {
-                echo "Waiting for the immutable environment to be created and health to stabilize..."
+                echo "Waiting for environment to update and deployment to complete..."
                 script {
                     def status = ""
                     def retries = 0
                     def maxRetries = 60  // Maximum retries (e.g., wait for 60 minutes)
                     while (retries < maxRetries) {
-                        // Get the status of the environment to check if it's fully healthy
                         status = sh(script: """
                             aws elasticbeanstalk describe-environments \
                                 --application-name $APPLICATION_NAME \
@@ -84,7 +84,7 @@ pipeline {
 
                         echo "Current Environment Health Status: $status"
 
-                        // If the status is 'Green' (healthy) and the environment is ready
+                        // If the status is 'Green' (healthy) and the application is deployed successfully
                         if (status == 'Green') {
                             echo "Deployment completed successfully and environment is healthy."
                             break
