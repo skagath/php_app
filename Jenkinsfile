@@ -33,7 +33,7 @@ pipeline {
             steps {
                 echo "Uploading application.zip to S3 bucket ${S3_BUCKET}..."
                 sh '''
-                aws s3 cp application.zip s3://$S3_BUCKET/application-${BUILD_NUMBER}.zip --region $AWS_REGION
+                aws s3 cp application.zip s3://elasticbeanstalk-us-west-2/application-${BUILD_NUMBER}.zip --region $AWS_REGION
                 '''
             }
         }
@@ -88,7 +88,7 @@ pipeline {
                         def event = sh(script: """
                             aws elasticbeanstalk describe-events \
                                 --application-name $APPLICATION_NAME \
-                                --enironment-name $ENVIRONMENT_NAME \
+                                --environment-name $ENVIRONMENT_NAME \
                                 --region $AWS_REGION \
                                 --start-time "${DEPLOYMENT_START_TIME}" \
                                 --max-items 5 \
@@ -102,7 +102,7 @@ pipeline {
                             break
                         }
 
-                        retries++z
+                        retries++
                         echo "Retry ${retries}/${maxRetries} - Waiting 20 seconds before next check..."
                         sleep(time: 20, unit: 'SECONDS')
                     }
