@@ -33,7 +33,7 @@ pipeline {
             steps {
                 echo "Uploading application.zip to S3 bucket ${S3_BUCKET}..."
                 sh '''
-                aws s3 cp application.zip s3://elasticbeanstalk-us-west-2/application-${BUILD_NUMBER}.zip --region $AWS_REGION
+                aws s3 cp application.zip s3://S3_BUCKET/application-${BUILD_NUMBER}.zip --region $AWS_REGION
                 '''
             }
         }
@@ -67,7 +67,7 @@ pipeline {
                 sh '''
                 aws elasticbeanstalk update-environment \
                     --environment-name $ENVIRONMENT_NAME \
-                    --version-label build-${BUILD_NUMBER} \
+                    --version-label build-${BUILD_NUMB} \
                     --region $AWS_REGION \
                     --option-settings "Namespace=aws:elasticbeanstalk:command,OptionName=DeploymentPolicy,Value=Immutable"
                 '''
