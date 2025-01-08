@@ -9,7 +9,7 @@ pipeline {
         ENVIRONMENT_NAME = 'Myphp-app-env'              // Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // GitHub repository URL
         BRANCH_NAME = 'main'                            // Branch to deploy from
-        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350' // S3 bucket for deployment artifacts
+        S3_BUCKET = 'elasticbeanstalk-us-west-2-9404824290' // S3 bucket for deployment artifacts
     }
 
     stages {
@@ -54,11 +54,21 @@ pipeline {
         stage('Deploy to Elastic Beanstalk') {
             steps {
                 echo "Updating Elastic Beanstalk environment ${ENVIRONMENT_NAME} to use new version (Rolling Update)..."
+                
+                // Capture Deployment Start Time
+                script {
+                    env.DEPLOYMENT_START_TIME = sh(
+                        script: "date -u +%Y-%m-%dT%H:%M:%SZ",
+                        returnStdout: true
+                    ).trim()
+                    echo "Deployment start time captured: ${DEPLOYMENT_START_TIME}"
+                }
+
                 sh '''
                 aws elasticbeanstalk update-environment \
                     --environment-name $ENVIRONMENT_NAME \
                     --version-label build-${BUILD_NUMBER} \
-                    --region $AWS_REGIO \
+                    --region $AWS_REGION \
                     --option-settings "Namespace=aws:elasticbeanstalk:command,OptionName=DeploymentPolicy,Value=Immutable"
                 '''
             }
@@ -69,21 +79,22 @@ pipeline {
                 echo "Waiting for Elastic Beanstalk deployment to complete..."
                 script {
                     def retries = 0
-                    def maxRetries = 8  // Maximum retries (~30 minutes with 30s intervals)
+                    def maxRetries = 8  // Maximum retries (~15 minutes with 30s intervals)
                     def eventFound = false
 
                     while (retries < maxRetries) {
+                        echo "Checking for 'Environment update completed successfully' event (Attempt ${retries + 1}/${maxRetries})..."
+                        
                         def event = sh(script: """
                             aws elasticbeanstalk describe-events \
                                 --application-name $APPLICATION_NAME \
                                 --environment-name $ENVIRONMENT_NAME \
                                 --region $AWS_REGION \
+                                --start-time "${DEPLOYMENT_START_TIME}" \
                                 --max-items 5 \
                                 --query "Events[?contains(Message, 'Environment update completed successfully.')].Message" \
                                 --output text
                         """, returnStdout: true).trim()
-
-                        echo "Checking for 'Environment update completed successfully' event..."
 
                         if (event.contains('Environment update completed successfully')) {
                             echo "✅ Deployment completed successfully!"
@@ -93,7 +104,7 @@ pipeline {
 
                         retries++
                         echo "Retry ${retries}/${maxRetries} - Waiting 30 seconds before next check..."
-                        sleep(time: 20, unit: 'SECONDS')
+                        sleep(time: 2o, unit: 'SECONDS')
                     }
 
                     if (!eventFound) {
