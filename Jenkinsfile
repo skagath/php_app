@@ -33,7 +33,7 @@ pipeline {
             steps {
                 echo "Uploading application.zip to S3 bucket ${S3_BUCKET}..."
                 sh '''
-                aws s3 cp application.zip s3://S3_BUCKET/application-${BUILD_NUMBER}.zip --region $AWS_REGION
+                aws s3 cp application.zip s3://$S3_BUCKET/application-${BUILD_NUMBER}.zip --region $AWS_REGION
                 '''
             }
         }
