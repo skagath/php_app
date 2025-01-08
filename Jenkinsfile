@@ -58,7 +58,7 @@ pipeline {
                 aws elasticbeanstalk update-environment \
                     --environment-name $ENVIRONMENT_NAME \
                     --version-label build-${BUILD_NUMBER} \
-                    --region $AWS_REGION \
+                    --region $AWS_REGIO \
                     --option-settings "Namespace=aws:elasticbeanstalk:command,OptionName=DeploymentPolicy,Value=Immutable"
                 '''
             }
@@ -66,14 +66,13 @@ pipeline {
 
         stage('Wait for Deployment Completion') {
             steps {
-                echo "Waiting for the event: 'Environment update completed successfully.'"
+                echo "Waiting for Elastic Beanstalk deployment to complete..."
                 script {
                     def retries = 0
-                    def maxRetries = 60  // Maximum retries (e.g., wait for 30 minutes with 30s intervals)
+                    def maxRetries = 8  // Maximum retries (~30 minutes with 30s intervals)
                     def eventFound = false
 
                     while (retries < maxRetries) {
-                        // Fetch the latest Elastic Beanstalk events
                         def event = sh(script: """
                             aws elasticbeanstalk describe-events \
                                 --application-name $APPLICATION_NAME \
@@ -84,25 +83,21 @@ pipeline {
                                 --output text
                         """, returnStdout: true).trim()
 
-                        echo "Checking for deployment completion event..."
+                        echo "Checking for 'Environment update completed successfully' event..."
 
                         if (event.contains('Environment update completed successfully')) {
-                            echo "Deployment completed successfully!"
+                            echo "✅ Deployment completed successfully!"
                             eventFound = true
                             break
                         }
 
                         retries++
-                        if (retries >= maxRetries) {
-                            error "Deployment event not found after maximum retries."
-                        }
-
-                        // Wait for 30 seconds before checking again
-                        sleep(time: 30, unit: 'SECONDS')
+                        echo "Retry ${retries}/${maxRetries} - Waiting 30 seconds before next check..."
+                        sleep(time: 20, unit: 'SECONDS')
                     }
 
                     if (!eventFound) {
-                        error "Failed to detect 'Environment update completed successfully.' event."
+                        error "❌ Deployment did not complete successfully after ${maxRetries} retries."
                     }
                 }
             }
@@ -111,7 +106,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline execution completed."
+            echo "📝 Pipeline execution completed."
         }
 
         success {
