@@ -67,7 +67,7 @@ pipeline {
                 sh '''
                 aws elasticbeanstalk update-environment \
                     --environment-name $ENVIRONMENT_NAME \
-                    --version-label build-${BUILD_NUMB} \
+                    --version-label build-${BUILD_NUMBER} \
                     --region $AWS_REGION \
                     --option-settings "Namespace=aws:elasticbeanstalk:command,OptionName=DeploymentPolicy,Value=Immutable"
                 '''
