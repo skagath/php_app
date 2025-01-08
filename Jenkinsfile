@@ -9,7 +9,7 @@ pipeline {
         ENVIRONMENT_NAME = 'Myphp-app-env'              // Elastic Beanstalk Environment Name
         GITHUB_REPO = 'https://github.com/skagath/php_app.git' // GitHub repository URL
         BRANCH_NAME = 'main'                            // Branch to deploy from
-        S3_BUCKET = 'elasticbeanstalk-us-west-2-9404824290' // S3 bucket for deployment artifacts
+        S3_BUCKET = 'elasticbeanstalk-us-west-2-940482429350' // S3 bucket for deployment artifacts
     }
 
     stages {
@@ -79,7 +79,7 @@ pipeline {
                 echo "Waiting for Elastic Beanstalk deployment to complete..."
                 script {
                     def retries = 0
-                    def maxRetries = 8  // Maximum retries (~15 minutes with 30s intervals)
+                    def maxRetries = 6  // Maximum retries
                     def eventFound = false
 
                     while (retries < maxRetries) {
@@ -88,7 +88,7 @@ pipeline {
                         def event = sh(script: """
                             aws elasticbeanstalk describe-events \
                                 --application-name $APPLICATION_NAME \
-                                --environment-name $ENVIRONMENT_NAME \
+                                --enironment-name $ENVIRONMENT_NAME \
                                 --region $AWS_REGION \
                                 --start-time "${DEPLOYMENT_START_TIME}" \
                                 --max-items 5 \
@@ -103,8 +103,8 @@ pipeline {
                         }
 
                         retries++
-                        echo "Retry ${retries}/${maxRetries} - Waiting 30 seconds before next check..."
-                        sleep(time: 2o, unit: 'SECONDS')
+                        echo "Retry ${retries}/${maxRetries} - Waiting 20 seconds before next check..."
+                        sleep(time: 20, unit: 'SECONDS')
                     }
 
                     if (!eventFound) {
