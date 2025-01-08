@@ -102,7 +102,7 @@ pipeline {
                             break
                         }
 
-                        retries++
+                        retries++z
                         echo "Retry ${retries}/${maxRetries} - Waiting 20 seconds before next check..."
                         sleep(time: 20, unit: 'SECONDS')
                     }
